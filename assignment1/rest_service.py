@@ -68,3 +68,6 @@ def delete_url(id):
 @app.route('/', methods=['DELETE'])
 def invalid_delete():
     return '', 404
+
+if __name__ == '__main__':
+    app.run(debug=True)
