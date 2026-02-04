@@ -1,73 +1,99 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask
+from flasgger import Swagger
+
+from config import Config
+from repositories.url_repository import URLRepository
+from controllers.url_controller import url_blueprint, init_controller
 
 app = Flask(__name__)
 
-url_database = {}
-id_counter = 0
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": "apispec",
+            "route": "/apispec.json",
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/apidocs/"
+}
 
-# Based on the link https://mojoauth.com/binary-encoding-decoding/base62-with-python#encoding-data-to-base62
-def base62_encode(num):
-    if num == 0:
-        return '0'
-    base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    result = []
-    while num > 0:
-        remainder = num % 62  
-        result.append(base62[remainder])
-        num = num // 62
-    return ''.join(reversed(result))
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "URL Shortener API",
+        "description": "A minimal URL shortening service built with Flask and MongoDB. "
+                       "Create short URLs, retrieve them, update them, or delete them.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "API Support"
+        }
+    },
+    "basePath": "/",
+    "schemes": ["http", "https"],
+    "tags": [
+        {
+            "name": "URLs",
+            "description": "Operations for managing shortened URLs"
+        }
+    ],
+    "definitions": {
+        "URLInput": {
+            "type": "object",
+            "required": ["url"],
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "example": "https://www.google.com",
+                    "description": "The original URL to be shortened"
+                }
+            }
+        },
+        "URLCreatedResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "1",
+                    "description": "The generated short ID for the URL"
+                }
+            }
+        },
+        "URLListResponse": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "example": ["1", "2", "3"]
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "No URL provided",
+                    "description": "Error message describing what went wrong"
+                }
+            }
+        }
+    }
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
+# init repository with MongoDB connection
+repository = URLRepository(mongo_uri=Config.MONGO_URI, db_name=Config.MONGO_DB)
+
+# init controller with repository
+init_controller(repository)
+
+# register bp
+app.register_blueprint(url_blueprint)
 
 
-def generate_id():
-    global id_counter
-    id_counter += 1
-    return base62_encode(id_counter)
-
-
-@app.route('/', methods=['POST'])
-def shorten_url():
-    data = request.get_json()
-    url = data.get('url')
-    if not url:
-        return jsonify({'error': 'No URL provided'}), 400
-    new_id = generate_id()
-    url_database[new_id] = url
-    return jsonify({'id': new_id}), 201
-
-
-# Get only stored URL ids and not the correlated links, per specification in assignment. 
-@app.route('/', methods=['GET'])
-def get_urls():
-    return jsonify(list(url_database.keys())), 200
-
-@app.route('/<id>', methods=['GET'])
-def redirect_url(id):
-    url = url_database.get(id)
-    if not url:
-        return '', 404
-    return redirect(url, code=301)
-
-@app.route('/<id>', methods=['PUT'])
-def update_url(id):
-    data = request.get_json()
-    new_url = data.get('url')
-    if id not in url_database:
-        return '', 404
-    if new_url is None:
-        return jsonify({'error': 'No URL provided'}), 400
-    url_database[id] = new_url
-    return '', 200
-
-@app.route('/<id>', methods=['DELETE'])
-def delete_url(id):
-    if id not in url_database:
-        return '', 404
-    del url_database[id]
-    return '', 204
-
-@app.route('/', methods=['DELETE'])
-def invalid_delete():
-    return '', 404
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
