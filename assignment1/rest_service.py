@@ -49,7 +49,7 @@ swagger_template = {
                 "url": {
                     "type": "string",
                     "example": "https://www.google.com",
-                    "description": "The original URL to be shortened"
+                    "description": "The original URL to be shortened. Must be a valid HTTP/HTTPS URL."
                 }
             }
         },

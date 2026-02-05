@@ -1,3 +1,4 @@
+import re
 from flask import Blueprint, request, jsonify, redirect
 from repositories.url_repository import URLRepository
 
@@ -36,7 +37,7 @@ def create_url():
         schema:
           $ref: '#/definitions/URLCreatedResponse'
       400:
-        description: Bad request - No URL provided
+        description: Bad request - No URL provided or invalid URL
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
@@ -45,6 +46,11 @@ def create_url():
         return jsonify({"error": "No URL provided"}), 400
 
     url = data["url"]
+    
+    url_pattern = r'^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$'
+    if not re.match(url_pattern, url):
+        return jsonify({"error": "Invalid URL format"}), 400
+    
     model = _repository.create(url)
     return jsonify({"id": model.id}), 201
 
