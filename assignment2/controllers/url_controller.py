@@ -2,15 +2,24 @@ import re
 from flask import Blueprint, request, jsonify, redirect
 from repositories.url_repository import URLRepository
 
+from services.auth_client import validate_token
+
+
+
 url_blueprint = Blueprint("urls", __name__)
 
 # repository instance is initialized by init_controller
 _repository: URLRepository = None
 
-
 def init_controller(repository: URLRepository) -> None:
     global _repository
     _repository = repository
+
+def get_authenticated_user():
+    token = request.headers.get("Authorization")
+    if not token:
+        return None
+    return validate_token(token)
 
 
 @url_blueprint.route("/", methods=["POST"])
@@ -41,6 +50,10 @@ def create_url():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    
     data = request.get_json()
     if not data or not data.get("value"):
         return jsonify({"error": "No URL provided"}), 400
@@ -51,7 +64,7 @@ def create_url():
     if not re.match(url_pattern, url):
         return jsonify({"error": "Invalid URL format"}), 400
     
-    model = _repository.create(url)
+    model = _repository.create(url, username)
     return jsonify({"id": model.id}), 201
 
 
@@ -70,7 +83,10 @@ def get_all_urls():
         schema:
           $ref: '#/definitions/URLListResponse'
     """
-    ids = _repository.get_all_ids()
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    ids = _repository.get_all_ids(username)
     return jsonify(ids), 200
 
 
@@ -98,6 +114,10 @@ def get_url(url_id: str):
       404:
         description: URL not found
     """
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    
     model = _repository.get_by_id(url_id)
     if model is None:
         return "", 404
@@ -136,18 +156,25 @@ def update_url(url_id: str):
       404:
         description: URL not found
     """
-    if not _repository.exists(url_id):
-      return "", 404
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    
+    model = _repository.get_by_id(url_id)
+    if not model:
+        return "", 404
+    if model.username != username:
+        return "forbidden", 403
       
     data = request.get_json(force=True)
-    if not data or data.get("url") is None:
+    if not data or data.get("value") is None:
         return jsonify({"error": "No URL provided"}), 400
 
     url_pattern = r'^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$'
-    if not re.match(url_pattern, data["url"]):
+    if not re.match(url_pattern, data["value"]):
         return jsonify({"error": "Invalid URL format"}), 400
 
-    _repository.update(url_id, data["url"])
+    _repository.update(url_id, data["value"])
     return "", 200
 
 
@@ -171,8 +198,15 @@ def delete_url(url_id: str):
       404:
         description: URL not found
     """
-    if not _repository.delete(url_id):
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    model = _repository.get_by_id(url_id)
+    if not model:
         return "", 404
+    if model.username != username:
+        return "forbidden", 403
+    _repository.delete(url_id)
     return "", 204
 
 
@@ -187,4 +221,12 @@ def delete_root():
       404:
         description: Not found - Cannot delete without specifying an ID
     """
+    username = get_authenticated_user()
+    if not username:
+        return "forbidden", 403
+    
+    ids = _repository.get_all_ids(username)
+    for url_id in ids:
+        _repository.delete(url_id)
+    
     return "", 404
