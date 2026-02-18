@@ -87,7 +87,7 @@ def get_all_urls():
     if not username:
         return "forbidden", 403
     ids = _repository.get_all_ids(username)
-    return jsonify(ids), 200
+    return jsonify({"urls": ids}), 200
 
 
 @url_blueprint.route("/<url_id>", methods=["GET"])
@@ -167,14 +167,14 @@ def update_url(url_id: str):
         return "forbidden", 403
       
     data = request.get_json(force=True)
-    if not data or data.get("value") is None:
+    if not data or data.get("url") is None:
         return jsonify({"error": "No URL provided"}), 400
 
     url_pattern = r'^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$'
-    if not re.match(url_pattern, data["value"]):
+    if not re.match(url_pattern, data["url"]):
         return jsonify({"error": "Invalid URL format"}), 400
 
-    _repository.update(url_id, data["value"])
+    _repository.update(url_id, data["url"])
     return "", 200
 
 
