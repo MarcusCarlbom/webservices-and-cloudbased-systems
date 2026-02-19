@@ -13,6 +13,32 @@ def init_controller(repository):
 
 @auth_blueprint.route('/users', methods=['POST'])
 def create_user():
+    """
+    Create a new user
+    ---
+    tags:
+      - Auth
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: User credentials for registration
+        required: true
+        schema:
+          $ref: '#/definitions/UserInput'
+    responses:
+      201:
+        description: User created successfully
+      400:
+        description: Bad request - Username or password missing
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Conflict - Username already exists
+    """
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
@@ -30,7 +56,30 @@ def create_user():
 
 @auth_blueprint.route('/users', methods=['PUT'])
 def update_password():
-
+    """
+    Update a user's password
+    ---
+    tags:
+      - Auth
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: Username with old and new password
+        required: true
+        schema:
+          $ref: '#/definitions/PasswordUpdateInput'
+    responses:
+      200:
+        description: Password updated successfully
+      400:
+        description: Bad request - Missing required fields
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      403:
+        description: Forbidden - Invalid credentials
+    """
     data = request.get_json()
     username = data.get("username")
     old_password = data.get("old_password")
@@ -51,6 +100,30 @@ def update_password():
 
 @auth_blueprint.route('/users/login', methods=['POST'])
 def login():
+    """
+    Login and receive a JWT
+    ---
+    tags:
+      - Auth
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: User credentials for login
+        required: true
+        schema:
+          $ref: '#/definitions/UserInput'
+    responses:
+      200:
+        description: Login successful, returns a JWT token
+        schema:
+          $ref: '#/definitions/TokenResponse'
+      403:
+        description: Forbidden, Invalid username or password
+    """
     data = request.get_json()
     
     username = data.get("username")
@@ -66,6 +139,30 @@ def login():
 
 @auth_blueprint.route('/users/validate', methods=['POST'])
 def validate_token():
+    """
+    Validate a JWT token
+    ---
+    tags:
+      - Auth
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        description: JWT token to validate
+        required: true
+        schema:
+          $ref: '#/definitions/TokenValidateInput'
+    responses:
+      200:
+        description: Token is valid, returns username
+        schema:
+          $ref: '#/definitions/ValidateResponse'
+      403:
+        description: Forbidden, token is invalid or expired
+    """
     data = request.get_json()
     token = data.get("token")
     if not token:

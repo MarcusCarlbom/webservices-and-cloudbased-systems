@@ -60,6 +60,53 @@ swagger_template = {
                     "example": "eyJhbGciOiJIUzI1NiJ9..."
                 }
             }
+        },
+        "PasswordUpdateInput": {
+            "type": "object",
+            "required": ["username", "old_password", "new_password"],
+            "properties": {
+                "username": {
+                    "type": "string",
+                    "example": "myusername"
+                },
+                "old_password": {
+                    "type": "string",
+                    "example": "mypassword"
+                },
+                "new_password": {
+                    "type": "string",
+                    "example": "mynewpassword"
+                }
+            }
+        },
+        "TokenValidateInput": {
+            "type": "object",
+            "required": ["token"],
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiJ9..."
+                }
+            }
+        },
+        "ValidateResponse": {
+            "type": "object",
+            "properties": {
+                "username": {
+                    "type": "string",
+                    "example": "myusername"
+                }
+            }
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Username and password are required",
+                    "description": "Error message describing what went wrong"
+                }
+            }
         }
     }
 }
