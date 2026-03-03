@@ -1,0 +1,63 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    command: ["mongod", "--port", "27420"]
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27420
+      - MONGO_DB=auth_service
+      - JWT_SECRET=super_safe_no_leakage_key_67
+      - FLASK_DEBUG=false
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  url_shortening_service:
+    build: ./url_shortening_service
+    container_name: url_shortening_service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27420
+      - MONGO_DB=url_shortening_service
+      - AUTH_SERVICE_URL=http://auth_service:8101
+      - FLASK_DEBUG=false
+    depends_on:
+      - auth_service
+      - mongodb
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - url_shortening_service
+      - auth_service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+    

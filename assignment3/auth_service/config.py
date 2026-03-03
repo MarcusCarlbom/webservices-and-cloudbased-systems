@@ -1,0 +1,6 @@
+import os
+
+class Config:
+    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+    MONGO_DB = os.environ.get("MONGO_DB", "auth_service")
+    DEBUG = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
