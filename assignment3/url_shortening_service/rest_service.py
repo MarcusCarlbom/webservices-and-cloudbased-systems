@@ -41,6 +41,15 @@ swagger_template = {
             "description": "Operations for managing shortened URLs"
         }
     ],
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "Paste your JWT token from POST /users/login"
+        }
+    },
+    "security": [{"ApiKeyAuth": []}],
     "definitions": {
         "URLInput": {
             "type": "object",

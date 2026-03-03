@@ -24,6 +24,10 @@ Verify all four containers are running
 docker compose ps
 ```
 
-Access swagger documentation
-auth service: http://localhost:8080/apidocs/ 
-url shortening service: http://localhost:8101/apidocs/
+Or run the demo
+```bash
+chmod +x [PATH_TO_DIRECTORY]/assignment3/demo.sh)
+```
+
+Access swagger documentation (currently redirects to the url shortening service endpoints)
+exposed nginx proxy http://loclahost:8080/apidocs/

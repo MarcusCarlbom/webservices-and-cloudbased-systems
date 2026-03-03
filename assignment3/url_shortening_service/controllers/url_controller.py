@@ -29,6 +29,8 @@ def create_url():
     ---
     tags:
       - URLs
+    security:
+      - ApiKeyAuth: []
     consumes:
       - application/json
     produces:
@@ -49,6 +51,8 @@ def create_url():
         description: Bad request - No URL provided or invalid URL
         schema:
           $ref: '#/definitions/ErrorResponse'
+      403:
+        description: Forbidden - missing or invalid token
     """
     username = get_authenticated_user()
     if not username:
@@ -75,6 +79,8 @@ def get_all_urls():
     ---
     tags:
       - URLs
+    security:
+      - ApiKeyAuth: []
     produces:
       - application/json
     responses:
@@ -82,6 +88,8 @@ def get_all_urls():
         description: List of all stored URL IDs
         schema:
           $ref: '#/definitions/URLListResponse'
+      403:
+        description: Forbidden - missing or invalid token
     """
     username = get_authenticated_user()
     if not username:
@@ -97,6 +105,8 @@ def get_url(url_id: str):
     ---
     tags:
       - URLs
+    security:
+      - ApiKeyAuth: []
     parameters:
       - name: url_id
         in: path
@@ -111,6 +121,8 @@ def get_url(url_id: str):
           Location:
             type: string
             description: The original URL to redirect to
+      403:
+        description: Forbidden - missing or invalid token
       404:
         description: URL not found
     """
@@ -131,6 +143,8 @@ def update_url(url_id: str):
     ---
     tags:
       - URLs
+    security:
+      - ApiKeyAuth: []
     consumes:
       - application/json
     parameters:
@@ -153,6 +167,8 @@ def update_url(url_id: str):
         description: Bad request - No URL provided
         schema:
           $ref: '#/definitions/ErrorResponse'
+      403:
+        description: Forbidden - missing or invalid token
       404:
         description: URL not found
     """
@@ -185,6 +201,8 @@ def delete_url(url_id: str):
     ---
     tags:
       - URLs
+    security:
+      - ApiKeyAuth: []
     parameters:
       - name: url_id
         in: path
@@ -195,6 +213,8 @@ def delete_url(url_id: str):
     responses:
       204:
         description: URL successfully deleted
+      403:
+        description: Forbidden - missing or invalid token
       404:
         description: URL not found
     """
