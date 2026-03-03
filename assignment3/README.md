@@ -30,4 +30,4 @@ chmod +x [PATH_TO_DIRECTORY]/assignment3/demo.sh)
 ```
 
 Access swagger documentation
-exposed nginx proxy http://loclahost:8080/apidocs/
+exposed nginx proxy `http://127.0.0.1:8080/apidocs/#/`
