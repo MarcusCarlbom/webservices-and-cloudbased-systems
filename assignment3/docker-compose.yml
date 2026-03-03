@@ -18,6 +18,8 @@ services:
       - MONGO_DB=auth_service
       - JWT_SECRET=super_safe_no_leakage_key_67
       - FLASK_DEBUG=false
+    ports:
+      - "8101:8101"
     depends_on:
       - mongodb
     networks:
@@ -32,6 +34,8 @@ services:
       - MONGO_DB=url_shortening_service
       - AUTH_SERVICE_URL=http://auth_service:8101
       - FLASK_DEBUG=false
+    ports:
+      - "8100:8100"
     depends_on:
       - auth_service
       - mongodb
