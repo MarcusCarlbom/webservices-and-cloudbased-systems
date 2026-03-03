@@ -1,0 +1,324 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Group 7 - URL Shortener - Full API",
+    "description": "All endpoints routed through the nginx reverse proxy on port 8080.\n\n- `/users*` routes are forwarded to the **Auth Service**\n- All other routes are forwarded to the **URL Shortening Service**\n\nTo use protected endpoints: call `POST /users/login`, copy the token, then click **Authorize** and paste it.",
+    "version": "1.0.0"
+  },
+  "host": "127.0.0.1:8080",
+  "basePath": "/",
+  "schemes": ["http"],
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Authorization",
+      "description": "JWT token obtained from POST /users/login"
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "User registration, login and password management"
+    },
+    {
+      "name": "URLs",
+      "description": "Create, list, retrieve, update and delete shortened URLs"
+    }
+  ],
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/UserInput" }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string", "example": "User created successfully" }
+              }
+            }
+          },
+          "400": {
+            "description": "Username or password missing",
+            "schema": { "$ref": "#/definitions/ErrorResponse" }
+          },
+          "409": { "description": "Username already exists" }
+        }
+      },
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Update a user's password",
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PasswordUpdateInput" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Password updated successfully" },
+          "400": {
+            "description": "Missing required fields",
+            "schema": { "$ref": "#/definitions/ErrorResponse" }
+          },
+          "403": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login and receive a JWT token",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/UserInput" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "schema": { "$ref": "#/definitions/TokenResponse" }
+          },
+          "403": { "description": "Invalid username or password" }
+        }
+      }
+    },
+    "/users/validate": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Validate a JWT token (internal use)",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TokenValidateInput" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token valid, returns username",
+            "schema": { "$ref": "#/definitions/ValidateResponse" }
+          },
+          "403": { "description": "Token invalid or expired" }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": ["URLs"],
+        "summary": "List all shortened URL IDs",
+        "security": [{ "ApiKeyAuth": [] }],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "List of URL IDs belonging to the authenticated user",
+            "schema": { "$ref": "#/definitions/URLListResponse" }
+          },
+          "403": { "description": "Missing or invalid token" }
+        }
+      },
+      "post": {
+        "tags": ["URLs"],
+        "summary": "Create a shortened URL",
+        "security": [{ "ApiKeyAuth": [] }],
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/URLInput" }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "URL shortened successfully",
+            "schema": { "$ref": "#/definitions/URLCreatedResponse" }
+          },
+          "400": {
+            "description": "No URL provided or invalid URL format",
+            "schema": { "$ref": "#/definitions/ErrorResponse" }
+          },
+          "403": { "description": "Missing or invalid token" }
+        }
+      }
+    },
+    "/{url_id}": {
+      "get": {
+        "tags": ["URLs"],
+        "summary": "Retrieve the original URL by short ID",
+        "security": [{ "ApiKeyAuth": [] }],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "url_id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The short ID of the URL",
+            "example": "1"
+          }
+        ],
+        "responses": {
+          "301": {
+            "description": "Returns the original URL",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "string", "example": "https://www.example.com" }
+              }
+            }
+          },
+          "403": { "description": "Missing or invalid token" },
+          "404": { "description": "URL not found" }
+        }
+      },
+      "put": {
+        "tags": ["URLs"],
+        "summary": "Update an existing shortened URL",
+        "security": [{ "ApiKeyAuth": [] }],
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "name": "url_id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The short ID of the URL to update",
+            "example": "1"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/URLInput" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "URL updated successfully" },
+          "400": {
+            "description": "No URL provided",
+            "schema": { "$ref": "#/definitions/ErrorResponse" }
+          },
+          "403": { "description": "Missing/invalid token or not the owner" },
+          "404": { "description": "URL not found" }
+        }
+      },
+      "delete": {
+        "tags": ["URLs"],
+        "summary": "Delete a shortened URL",
+        "security": [{ "ApiKeyAuth": [] }],
+        "parameters": [
+          {
+            "name": "url_id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The short ID of the URL to delete",
+            "example": "1"
+          }
+        ],
+        "responses": {
+          "204": { "description": "URL deleted successfully" },
+          "403": { "description": "Missing/invalid token or not the owner" },
+          "404": { "description": "URL not found" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "UserInput": {
+      "type": "object",
+      "required": ["username", "password"],
+      "properties": {
+        "username": { "type": "string", "example": "alice" },
+        "password": { "type": "string", "example": "secret" }
+      }
+    },
+    "PasswordUpdateInput": {
+      "type": "object",
+      "required": ["username", "old_password", "new_password"],
+      "properties": {
+        "username": { "type": "string", "example": "alice" },
+        "old_password": { "type": "string", "example": "secret" },
+        "new_password": { "type": "string", "example": "newsecret" }
+      }
+    },
+    "TokenResponse": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "example": "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9..." }
+      }
+    },
+    "TokenValidateInput": {
+      "type": "object",
+      "required": ["token"],
+      "properties": {
+        "token": { "type": "string", "example": "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9..." }
+      }
+    },
+    "ValidateResponse": {
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "example": "alice" }
+      }
+    },
+    "URLInput": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "example": "https://www.example.com",
+          "description": "The original URL to shorten. Must be a valid HTTP/HTTPS URL."
+        }
+      }
+    },
+    "URLCreatedResponse": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "example": "1", "description": "The generated short ID" }
+      }
+    },
+    "URLListResponse": {
+      "type": "object",
+      "properties": {
+        "urls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "example": ["1", "2", "3"]
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": { "type": "string", "example": "No URL provided" }
+      }
+    }
+  }
+}

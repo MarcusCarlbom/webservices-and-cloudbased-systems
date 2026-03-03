@@ -29,5 +29,5 @@ Or run the demo
 chmod +x [PATH_TO_DIRECTORY]/assignment3/demo.sh)
 ```
 
-Access swagger documentation (currently redirects to the url shortening service endpoints)
+Access swagger documentation
 exposed nginx proxy http://loclahost:8080/apidocs/
