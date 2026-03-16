@@ -12,11 +12,11 @@ multi-user URL shortener from Assignment 2 as containerised services.
 
 ```
                         ┌─────────────────────────────────────────────┐
-                        │  Docker network / Kubernetes cluster         │
-                        │                                              │
-  Client ──► nginx:80 ──┤──► url_shortener:8100 ──► mongodb:27017    │
-                        │                                              │
-                        │         auth_service:8101 ──► mongodb:27017 │
+                        │  Docker network / Kubernetes cluster        │
+                        │                                             │
+  Client ──► nginx:80 ──┤──► url_shortener:8100 ──► mongodb:27420.    │
+                        │                                             │
+                        │         auth_service:8101 ──► mongodb:27420 │
                         └─────────────────────────────────────────────┘
 ```
 
@@ -25,7 +25,7 @@ multi-user URL shortener from Assignment 2 as containerised services.
 | nginx          | 80            | host port 80             | NodePort 30080          |
 | url_shortener  | 8100          | via nginx only           | NodePort 30100          |
 | auth_service   | 8101          | via nginx only           | ClusterIP (internal)    |
-| mongodb        | 27017         | none                     | ClusterIP (internal)    |
+| mongodb        | 27420         | none                     | ClusterIP (internal)    |
 
 ---
 
@@ -35,7 +35,7 @@ multi-user URL shortener from Assignment 2 as containerised services.
 |--------------------------|--------------|
 | `url_shortener/`         | 3.1 and 3.2  |
 | `auth_service/`          | 3.1 and 3.2  |
-| `nginx/nginx.conf`       | 3.1          |
+| `nginx/nginx.conf`       | 3.1 only     |
 | `docker-compose.yml`     | 3.1 only     |
 | `k8s/*.yaml`             | 3.2 only     |
 
@@ -257,15 +257,15 @@ groups        # 'docker' should appear in the list
 #### A3 – Install Kubernetes tooling [all nodes]
 
 ```bash
-sudo apt-get install -y apt-transport-https net-tools
-sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg \
-  https://packages.cloud.google.com/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] \
-  https://apt.kubernetes.io/ kubernetes-xenial main" \
+sudo apt-get install -y apt-transport-https net-tools curl
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+  https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" \
   | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update
-sudo apt-get install -y kubelet kubectl kubeadm
-sudo apt-mark hold kubelet kubectl kubeadm    # prevent unintended upgrades
+sudo apt-get update --allow-unauthenticated
+sudo apt-get install -y --allow-unauthenticated kubelet kubectl kubeadm
+sudo apt-mark hold kubelet kubectl kubeadm
 ```
 
 ---
@@ -298,9 +298,8 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 #### B3 – Configure the kubelet node IP
 
 ```bash
-sudo echo KUBELET_KUBEADM_ARGS=\"--network-plugin=cni \
-  --pod-infra-container-image=k8s.gcr.io/pause:3.2 \
-  --node-ip=$(ip -4 -o a | grep -i "ens3" | cut -d ' ' -f 2,7 | cut -d '/' -f 1 | awk '{print $2}')\" \
+sudo echo KUBELET_KUBEADM_ARGS=\"--node-ip=$(ip -4 -o a | grep -i "ens3" \
+  | cut -d ' ' -f 2,7 | cut -d '/' -f 1 | awk '{print $2}')\" \
   | sudo tee /var/lib/kubelet/kubeadm-flags.env
 sudo systemctl restart kubelet.service
 ```
@@ -342,9 +341,8 @@ sudo kubeadm join <control-ip>:6443 --token <token> \
 #### C2 – Configure the kubelet node IP
 
 ```bash
-sudo echo KUBELET_KUBEADM_ARGS=\"--network-plugin=cni \
-  --pod-infra-container-image=k8s.gcr.io/pause:3.2 \
-  --node-ip=$(ip -4 -o a | grep -i "ens3" | cut -d ' ' -f 2,7 | cut -d '/' -f 1 | awk '{print $2}')\" \
+sudo echo KUBELET_KUBEADM_ARGS=\"--node-ip=$(ip -4 -o a | grep -i "ens3" \
+  | cut -d ' ' -f 2,7 | cut -d '/' -f 1 | awk '{print $2}')\" \
   | sudo tee /var/lib/kubelet/kubeadm-flags.env
 sudo systemctl restart kubelet.service
 ```

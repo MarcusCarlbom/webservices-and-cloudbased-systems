@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        upstream url_shortening_service {
+            server url-shortener:8100;
+        }
+        upstream auth_service {
+            server auth-service:8101;
+        }
+        server {
+            listen 80;
+            location ~ ^/users {
+                proxy_pass         http://auth_service;
+                proxy_set_header   Host              $host;
+                proxy_set_header   X-Real-IP         $remote_addr;
+                proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            }
+            location / {
+                proxy_pass         http://url_shortening_service;
+                proxy_set_header   Host              $host;
+                proxy_set_header   X-Real-IP         $remote_addr;
+                proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            }
+        }
+    }
